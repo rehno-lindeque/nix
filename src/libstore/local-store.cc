@@ -79,7 +79,7 @@ int getSchema(Path schemaPath)
 
 void migrateCASchema(SQLite& db, Path schemaPath, AutoCloseFD& lockFd)
 {
-    const int nixCASchemaVersion = 2;
+    const int nixCASchemaVersion = 3;
     int curCASchema = getSchema(schemaPath);
     if (curCASchema != nixCASchemaVersion) {
         if (curCASchema > nixCASchemaVersion) {
@@ -126,6 +126,19 @@ void migrateCASchema(SQLite& db, Path schemaPath, AutoCloseFD& lockFd)
                     foreign key (referrer) references Realisations(id) on delete cascade,
                     foreign key (realisationReference) references Realisations(id) on delete restrict
                 );
+            )");
+            txn.commit();
+        }
+
+        if (curCASchema < 3) {
+            SQLiteTxn txn(db);
+            db.exec(R"(
+                create trigger if not exists DeleteSelfRefsViaRealisations before delete on ValidPaths
+                begin
+                    delete from RealisationsRefs where realisationReference = (
+                    select id from Realisations where outputPath = old.id
+                    );
+                end;
             )");
             txn.commit();
         }
