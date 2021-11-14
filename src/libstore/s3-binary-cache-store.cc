@@ -272,6 +272,8 @@ struct S3BinaryCacheStoreImpl : virtual S3BinaryCacheStoreConfig, public virtual
             auto & error = res.GetError();
             if (error.GetErrorType() == Aws::S3::S3Errors::RESOURCE_NOT_FOUND
                 || error.GetErrorType() == Aws::S3::S3Errors::NO_SUCH_KEY
+                // The operation is not valid for the object's storage class
+                || error.GetErrorType() == Aws::S3::S3Errors::INVALID_OBJECT_STATE
                 // If bucket listing is disabled, 404s turn into 403s
                 || error.GetErrorType() == Aws::S3::S3Errors::ACCESS_DENIED)
                 return false;
